@@ -265,6 +265,9 @@ IDF_VER := `cat ${IDF_PATH}/version.txt`
 endif
 
 # Set default LDFLAGS
+#-nostdlib 不连接系统标准启动文件和标准库文件，只把指定的文件传递给连接器。
+#--gc-sections：这是avr-ld的参数，通过-Wl,<option>由gcc把option里的参数传递给avr-ld。它使得链接器ld链接时删除不用的段。这样，因为每个函数自成一段（即可以看作函数=段），如果有某个函数未被任何函数/段调用，则ld不会链接它。
+#-static	在支持动态链接的系统上，阻止连接共享库。该选项在其它系统上 无效。
 EXTRA_LDFLAGS ?=
 LDFLAGS ?= -nostdlib \
 	-u call_user_start_cpu0	\
