@@ -3,11 +3,13 @@
 # This Makefile is included directly from the user project Makefile in order to call the component.mk
 # makefiles of all components (in a separate make process) to build all the libraries, then links them
 # together into the final file. If so, PWD is the project dir (we assume).
+# 为了调用component.mk编译所有的库文件,这个makefile文件由工程下的makefile文件直接调用，然后将他问链接到最终文件里。
 #
 
 #
 # This makefile requires the environment variable IDF_PATH to be set to the top-level esp-idf directory
 # where this file is located.
+# 这个makefile要求设置环境变量IDF_PATH指向esp-idf所在的文件夹内
 #
 #防止文件名跟命令行冲突或者跟变量冲突
 .PHONY: build-components menuconfig defconfig all build clean all_binaries check-submodules size size-components size-files size-symbols list-components
@@ -93,7 +95,8 @@ ifndef IDF_PATH
 $(error IDF_PATH variable is not set to a valid directory.)
 endif
 
-#判断环境变量是否能够加载成功
+#判断环境变量是否能够加载成功，
+#检测IDF_PATH变量，IDF_PATH变量可能为预先设置的环境变量，也可能是从命令行传入的路径，这里主要检测从IDF_PATH是否正确获取到
 ifneq ("$(IDF_PATH)","$(SANITISED_IDF_PATH)")
 # implies IDF_PATH was overriden on make command line.
 # Due to the way make manages variables, this is hard to account for
@@ -109,6 +112,7 @@ endif
 
 # disable built-in make rules, makes debugging saner
 #$(MAKEFLAGS)输是：rRs --warn-undefined-variables
+# 保存原来的MAKEFLAGS，并设置新的MAKEFLAGS
 MAKEFLAGS_OLD := $(MAKEFLAGS)
 MAKEFLAGS +=-rR
 
@@ -253,6 +257,7 @@ endif
 else
 	@echo "To flash all build output, run 'make flash' or:"
 endif
+	#ESPTOOLPY_WRITE_FLASH esptool路径及默认下载参数，ESPTOOL_ALL_FLASH_ARGS 要下载的文件路径和下载地址
 	@echo $(ESPTOOLPY_WRITE_FLASH) $(ESPTOOL_ALL_FLASH_ARGS)
 
 
@@ -268,6 +273,8 @@ endif
 #-nostdlib 不连接系统标准启动文件和标准库文件，只把指定的文件传递给连接器。
 #--gc-sections：这是avr-ld的参数，通过-Wl,<option>由gcc把option里的参数传递给avr-ld。它使得链接器ld链接时删除不用的段。这样，因为每个函数自成一段（即可以看作函数=段），如果有某个函数未被任何函数/段调用，则ld不会链接它。
 #-static	在支持动态链接的系统上，阻止连接共享库。该选项在其它系统上 无效。
+#添加gcc 、stdc++ 、gcov等库，并通过COMPONENT_LDFLAGS添加用户需要添加的链接flag，并在反复在搜索目标文件、变量等
+#设置为小端编译
 EXTRA_LDFLAGS ?=
 LDFLAGS ?= -nostdlib \
 	-u call_user_start_cpu0	\
@@ -296,6 +303,7 @@ CPPFLAGS ?=
 EXTRA_CPPFLAGS ?=
 CPPFLAGS := -DESP_PLATFORM -D IDF_VER=\"$(IDF_VER)\" -MMD -MP $(CPPFLAGS) $(EXTRA_CPPFLAGS)
 
+#打印输出标志
 # Warnings-related flags relevant both for C and C++
 COMMON_WARNING_FLAGS = -Wall -Werror=all \
 	-Wno-error=unused-function \
@@ -309,6 +317,7 @@ ifdef CONFIG_WARN_WRITE_STRINGS
 COMMON_WARNING_FLAGS += -Wwrite-strings
 endif #CONFIG_WARN_WRITE_STRINGS
 
+# 优化编译，只编译进用到的sections，使用长跳转来代替段跳转，不连接标准启动文件和标准库文件，只将指定文件传递给连接器
 # Flags which control code generation and dependency generation, both for C and C++
 COMMON_FLAGS = \
 	-ffunction-sections -fdata-sections \
@@ -379,11 +388,12 @@ ARFLAGS := cru
 
 export CFLAGS CPPFLAGS CXXFLAGS ARFLAGS
 
+#设置主机编译链接等工具以及交叉工具
 # Set default values that were not previously defined
 CC ?= gcc
 LD ?= ld
 AR ?= ar
-OBJCOPY ?= objcopy
+OBJCOPY ?= 
 SIZE ?= size
 
 # Set host compiler and binutils
@@ -394,6 +404,7 @@ HOSTOBJCOPY := $(OBJCOPY)
 HOSTSIZE := $(SIZE)
 export HOSTCC HOSTLD HOSTAR HOSTOBJCOPY SIZE
 
+#设置交叉编译工具并去除引号
 # Set target compiler. Defaults to whatever the user has
 # configured as prefix + ye olde gcc commands
 CC := $(call dequote,$(CONFIG_TOOLPREFIX))gcc
@@ -406,6 +417,7 @@ export CC CXX LD AR OBJCOPY SIZE
 
 PYTHON=$(call dequote,$(CONFIG_PYTHON))
 
+#生成文件
 # the app is the main executable built by the project
 APP_ELF:=$(BUILD_DIR_BASE)/$(PROJECT_NAME).elf
 APP_MAP:=$(APP_ELF:.elf=.map)
@@ -413,6 +425,7 @@ APP_BIN:=$(APP_ELF:.elf=.bin)
 
 # Include any Makefile.projbuild file letting components add
 # configuration at the project level
+# 递归查找各文件夹下的Makefile.projbuild文件
 define includeProjBuildMakefile
 $(if $(V),$$(info including $(1)/Makefile.projbuild...))
 COMPONENT_PATH := $(1)
@@ -425,6 +438,7 @@ $(foreach componentpath,$(COMPONENT_PATHS), \
 # once we know component paths, we can include the config generation targets
 #
 # (bootloader build doesn't need this, config is exported from top-level)
+#编译bootloader不包含project_config
 ifndef IS_BOOTLOADER_BUILD
 include $(IDF_PATH)/make/project_config.mk
 endif
@@ -439,6 +453,7 @@ $(APP_ELF): $(foreach libcomp,$(COMPONENT_LIBRARIES),$(BUILD_DIR_BASE)/$(libcomp
 	$(summary) LD $(patsubst $(PWD)/%,%,$@)
 	$(CC) $(LDFLAGS) -o $@ -Wl,-Map=$(APP_MAP)
 
+#只编译app，可直接使用make 调用
 app: $(APP_BIN) partition_table_get_info
 ifeq ("$(CONFIG_SECURE_BOOT_ENABLED)$(CONFIG_SECURE_BOOT_BUILD_SIGNED_BINARIES)","y") # secure boot enabled, but remote sign app image
 	@echo "App built but not signed. Signing step via espsecure.py:"
@@ -453,6 +468,7 @@ endif
 .PHONY: check_python_dependencies
 
 # Notify users when some of the required python packages are not installed
+# 检查python依赖文件是否安装，直接通过make 调用
 check_python_dependencies:
 ifndef IS_BOOTLOADER_BUILD
 	$(PYTHON) $(IDF_PATH)/tools/check_python_dependencies.py
@@ -460,6 +476,7 @@ endif
 
 all_binaries: $(APP_BIN)
 
+#创建文件夹，如果存在不报错，如果父文件夹不存在就重新创建
 $(BUILD_DIR_BASE):
 	mkdir -p $(BUILD_DIR_BASE)
 
@@ -468,6 +485,7 @@ $(BUILD_DIR_BASE):
 # $(2) - component name only
 #
 # Is recursively expanded by the GenerateComponentTargets macro
+#make所有组件
 define ComponentMake
 +$(MAKE) -C $(BUILD_DIR_BASE)/$(2) -f $(IDF_PATH)/make/component_wrapper.mk COMPONENT_MAKEFILE=$(1)/component.mk COMPONENT_NAME=$(2)
 endef
