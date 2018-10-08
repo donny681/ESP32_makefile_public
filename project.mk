@@ -299,11 +299,17 @@ LDFLAGS ?= -nostdlib \
 
 # CPPFLAGS used by C preprocessor
 # If any flags are defined in application Makefile, add them at the end. 
+#-M:输出为project
+#-MMD：和上面的那个一样，但是它将忽略由#include造成的依赖关系
+#-MMD：和-MM相同，但是输出将导入到.d的文件里面:
 CPPFLAGS ?=
 EXTRA_CPPFLAGS ?=
 CPPFLAGS := -DESP_PLATFORM -D IDF_VER=\"$(IDF_VER)\" -MMD -MP $(CPPFLAGS) $(EXTRA_CPPFLAGS)
 
 #打印输出标志
+#-Wall 是使能所有警告。
+#-Werror=all:把所有的告警信息转化为错误信息，并在告警发生时终止编译过程
+#-Wno-error:把以下警告变成错误
 # Warnings-related flags relevant both for C and C++
 COMMON_WARNING_FLAGS = -Wall -Werror=all \
 	-Wno-error=unused-function \
@@ -318,6 +324,10 @@ COMMON_WARNING_FLAGS += -Wwrite-strings
 endif #CONFIG_WARN_WRITE_STRINGS
 
 # 优化编译，只编译进用到的sections，使用长跳转来代替段跳转，不连接标准启动文件和标准库文件，只将指定文件传递给连接器
+#-ffunction-sections -fdata-sections 只把有用代码编译进去，减少程序大小
+#对于CPU是PPC604类型的，动态下载的.out文件编译的时候必须要加这个编译选型，加了后会使用长跳转指令代替短跳转指令
+#Force bitfield accesses to match their type width
+#-nostdlib:不连接系统标准启动文件和标准库文件，只把指定的文件传递给连接器。
 # Flags which control code generation and dependency generation, both for C and C++
 COMMON_FLAGS = \
 	-ffunction-sections -fdata-sections \
@@ -641,4 +651,4 @@ endif #CONFIG_TOOLPREFIX
 debug :
 	# @echo $(TEST_COMPONENT_PATHS)
 	# @echo $(TEST_COMPONENTS_LIST)
-	@echo $(IDF_VER)
+	@echo $(APP_MAP)
