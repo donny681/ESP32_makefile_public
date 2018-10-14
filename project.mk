@@ -458,6 +458,11 @@ endif
 #
 # also depends on additional dependencies (linker scripts & binary libraries)
 # stored in COMPONENT_LINKER_DEPS, built via component.mk files' COMPONENT_ADD_LINKER_DEPS variable
+#编译所有component .a文件，并且拷贝到app.elf
+#COMPONENT_LIBRARIES :app_trace app_update asio aws_iot bootloader_support bt coap console cxx driver esp-tls esp32 esp_adc_cal esp_http_client esp_https_ota ethernet expat fatfs freertos heap http_server idf_test jsmn json libsodium log lwip main mbedtls mdns micro-ecc newlib nghttp nvs_flash openssl pthread sdmmc smartconfig_ack soc spi_flash spiffs tcpip_adapter ulp vfs wear_levelling wpa_supplicant xtensa-debug-module
+#BUILD_DIR_BASE:/home/fyy/esp_demo/hello_world/build
+#编译esp32文件夹下.a 文件 COMPONENT_LINKER_DEPS：/home/fyy/esp/esp-idf/components/esp32/lib/libcore.a /home/fyy/esp/esp-idf/components/esp32/lib/librtc.a /home/fyy/esp/esp-idf/components/esp32/lib/libnet80211.a /home/fyy/esp/esp-idf/components/esp32/lib/libpp.a /home/fyy/esp/esp-idf/components/esp32/lib/libwpa.a /home/fyy/esp/esp-idf/components/esp32/lib/libsmartconfig.a /home/fyy/esp/esp-idf/components/esp32/lib/libcoexist.a /home/fyy/esp/esp-idf/components/esp32/lib/libwps.a /home/fyy/esp/esp-idf/components/esp32/lib/libwpa2.a /home/fyy/esp/esp-idf/components/esp32/lib/libespnow.a /home/fyy/esp/esp-idf/components/esp32/lib/libphy.a /home/fyy/esp/esp-idf/components/esp32/lib/libmesh.a /home/fyy/esp/esp-idf/components/esp32/ld/esp32.common.ld /home/fyy/esp/esp-idf/components/esp32/ld/esp32.rom.ld /home/fyy/esp/esp-idf/components/esp32/ld/esp32.peripherals.ld /home/fyy/esp/esp-idf/components/esp32/ld/esp32.rom.libgcc.ld /home/fyy/esp/esp-idf/components/esp32/ld/esp32.rom.spiram_incompatible_fns.ld /home/fyy/esp/esp-idf/components/newlib/lib/libc.a /home/fyy/esp/esp-idf/components/newlib/lib/libm.a
+#patsubst：
 COMPONENT_LINKER_DEPS ?=
 $(APP_ELF): $(foreach libcomp,$(COMPONENT_LIBRARIES),$(BUILD_DIR_BASE)/$(libcomp)/lib$(libcomp).a) $(COMPONENT_LINKER_DEPS) $(COMPONENT_PROJECT_VARS)
 	$(summary) LD $(patsubst $(PWD)/%,%,$@)
@@ -496,6 +501,8 @@ $(BUILD_DIR_BASE):
 #
 # Is recursively expanded by the GenerateComponentTargets macro
 #make所有组件
+#当make的目标为all时,-C $(KDIR) 指明跳转到内核源码目录下读取那里的Makefile
+#-f 指定读取一个 makefile 来代替缺省的 makefile。如果 Makefile 是 -（连字符），那么读取标准输入。可以指定多个 makefile 并按指定的顺序读取
 define ComponentMake
 +$(MAKE) -C $(BUILD_DIR_BASE)/$(2) -f $(IDF_PATH)/make/component_wrapper.mk COMPONENT_MAKEFILE=$(1)/component.mk COMPONENT_NAME=$(2)
 endef
@@ -649,6 +656,6 @@ endif #MAKE_RESTARTS
 endif #CONFIG_TOOLPREFIX
 
 debug :
-	# @echo $(TEST_COMPONENT_PATHS)
-	# @echo $(TEST_COMPONENTS_LIST)
-	@echo $(APP_MAP)
+#	@echo $(prereq_if_explicit)
+#	@echo $(BUILD_DIR_BASE)/$(2)
+#	@echo $(patsubst $(PWD)/%,%,$@)
