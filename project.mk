@@ -1,4 +1,4 @@
-#
+#$(summary):@echo 显示
 # Main Project Makefile
 # This Makefile is included directly from the user project Makefile in order to call the component.mk
 # makefiles of all components (in a separate make process) to build all the libraries, then links them
@@ -540,10 +540,17 @@ $(BUILD_DIR_BASE)/$(2)/lib$(2).a: component-$(2)-build
 $(BUILD_DIR_BASE)/$(2)/component_project_vars.mk: $(1)/component.mk $(COMMON_MAKEFILES) $(SDKCONFIG_MAKEFILE) | $(BUILD_DIR_BASE)/$(2)
 	$(call ComponentMake,$(1),$(2)) component_project_vars.mk
 endef
-
+#取文件函数: $(notdir <names...>)功能: 从文件名序列 <names> 中取出非目录部分 返回: 文件名序列 <names> 中的非目录部分
+#$(foreach <var>,<list>,<text>)这个函数的意思是，把参数<list>;中的单词逐一取出放到参数<var>;所指定的变量中，然后再执行< text>;所包含的表达式。
+#$(eval text)它的意思是 text 的内容将作为makefile的一部分而被make解析和执行。
 $(foreach component,$(COMPONENT_PATHS),$(eval $(call GenerateComponentTargets,$(component),$(notdir $(component)))))
 $(foreach component,$(TEST_COMPONENT_PATHS),$(eval $(call GenerateComponentTargets,$(component),$(lastword $(subst /, ,$(dir $(component))))_test)))
 
+#$(addprefix <prefix>, <name-1>, <name-2>...<name-n>)
+#说明：该函数将前缀 <prefix> 加到各个 <name> 的前面去。
+#加后缀函数: $(addsuffix <suffix>,<names...>)
+#功能: 把后缀 <suffix> 加到 <names> 中的每个单词后面
+#返回: 加过后缀的文件名序列
 app-clean: $(addprefix component-,$(addsuffix -clean,$(notdir $(COMPONENT_PATHS))))
 	$(summary) RM $(APP_ELF)
 	rm -f $(APP_ELF) $(APP_BIN) $(APP_MAP)
@@ -656,6 +663,6 @@ endif #MAKE_RESTARTS
 endif #CONFIG_TOOLPREFIX
 
 debug :
-#	@echo $(prereq_if_explicit)
+	@echo $(summary)
 #	@echo $(BUILD_DIR_BASE)/$(2)
 #	@echo $(patsubst $(PWD)/%,%,$@)
