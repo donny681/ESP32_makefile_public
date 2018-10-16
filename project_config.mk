@@ -39,13 +39,12 @@ endif
 # macro for the commands to run kconfig tools conf-idf or mconf-idf.
 # $1 is the name (& args) of the conf tool to run
 define RunConf
-	@echo $(BUILD_DIR_BASE)/include/config
 	mkdir -p $(BUILD_DIR_BASE)/include/config
 	cd $(BUILD_DIR_BASE); KCONFIG_AUTOHEADER=$(abspath $(BUILD_DIR_BASE)/include/sdkconfig.h) \
 	COMPONENT_KCONFIGS="$(COMPONENT_KCONFIGS)" KCONFIG_CONFIG=$(SDKCONFIG) \
 	COMPONENT_KCONFIGS_PROJBUILD="$(COMPONENT_KCONFIGS_PROJBUILD)" \
 	IDF_CMAKE=n \
-	#$(KCONFIG_TOOL_DIR)/$1 $(IDF_PATH)/Kconfig
+	$(KCONFIG_TOOL_DIR)/$1 $(IDF_PATH)/Kconfig
 endef
 
 ifndef MAKE_RESTARTS

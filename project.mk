@@ -3,7 +3,7 @@
 # This Makefile is included directly from the user project Makefile in order to call the component.mk
 # makefiles of all components (in a separate make process) to build all the libraries, then links them
 # together into the final file. If so, PWD is the project dir (we assume).
-# 为了调用component.mk编译所有的库文件,这个makefile文件由工程下的makefile文件直接调用，然后将他问链接到最终文件里。
+#为了调用component.mk编译所有的库文件,这个makefile文件由工程下的makefile文件直接调用，然后将他问链接到最终文件里。
 #
 
 #
@@ -12,6 +12,7 @@
 # 这个makefile要求设置环境变量IDF_PATH指向esp-idf所在的文件夹内
 #
 #防止文件名跟命令行冲突或者跟变量冲突
+
 .PHONY: build-components menuconfig defconfig all build clean all_binaries check-submodules size size-components size-files size-symbols list-components
 
 MAKECMDGOALS ?= all
@@ -59,6 +60,7 @@ ifeq ("$(filter 4.% 3.81 3.82,$(MAKE_VERSION))","")
 $(warning esp-idf build system only supports GNU Make versions 3.81 or newer. You may see unexpected results with other Makes.)
 endif
 
+
 ifdef MSYSTEM
 ifneq ("$(MSYSTEM)","MINGW32")
 $(warning esp-idf build system only supports MSYS2 in "MINGW32" mode. Consult the ESP-IDF documentation for details.)
@@ -81,9 +83,8 @@ OS ?=
 # * changes Windows-style C:/blah/ paths to MSYS style /c/blah
 ifeq ("$(OS)","Windows_NT")
 # On Windows MSYS2, make wildcard function returns empty string for paths of form /xyz
-# where /xyz is a directory inside the MSYS root - so we don't use it.
+# where /xyz is a directory inside the MSYS root - so we don't use it
 #如果是window系统返回绝对路径
-SANITISED_IDF_PATH:=$(realpath $(IDF_PATH))
 else
 #如果是非windows系统返回绝对路径
 SANITISED_IDF_PATH:=$(realpath $(wildcard $(IDF_PATH)))
@@ -110,9 +111,8 @@ ifneq ("$(IDF_PATH)","$(subst :,,$(IDF_PATH))")
 $(error IDF_PATH cannot contain colons. If overriding IDF_PATH on Windows, use MSYS Unix-style /c/dir instead of C:/dir)
 endif
 
-# disable built-in make rules, makes debugging saner
-#$(MAKEFLAGS)输是：rRs --warn-undefined-variables
 # 保存原来的MAKEFLAGS，并设置新的MAKEFLAGS
+# disable built-in make rules, makes debugging saner
 MAKEFLAGS_OLD := $(MAKEFLAGS)
 MAKEFLAGS +=-rR
 
@@ -235,9 +235,9 @@ COMPONENT_PROJECT_VARS := $(addprefix $(BUILD_DIR_BASE)/,$(COMPONENT_PROJECT_VAR
 #使用“include FILENAMES...”，make程序处理时，如果“FILENAMES”列表中的任何一个文件不能正常读取而且不存在一个创建此文件的规则时make程序将会提示错误并退出。
 #使用“-include FILENAMES...”的情况是，当所包含的文件不存在或者不存在一个规则去创建它，make程序会继续执行，只有真正由于不能正确完成终极目标的重建时（某些必需的目标无法在当前已读取的makefile文件内容中找到正确的重建规则），才会提示致命错误并退出。
 -include $(COMPONENT_PROJECT_VARS)
-
 # Also add to工程目录-level project include path, for top-level includes
 #获取COMPONENT路径
+# Also add top-level project include path, for top-level includes
 COMPONENT_INCLUDES += $(abspath $(BUILD_DIR_BASE)/include/)
 
 export COMPONENT_INCLUDES
@@ -257,7 +257,6 @@ endif
 else
 	@echo "To flash all build output, run 'make flash' or:"
 endif
-	#ESPTOOLPY_WRITE_FLASH esptool路径及默认下载参数，ESPTOOL_ALL_FLASH_ARGS 要下载的文件路径和下载地址
 	@echo $(ESPTOOLPY_WRITE_FLASH) $(ESPTOOL_ALL_FLASH_ARGS)
 
 
@@ -311,6 +310,7 @@ CPPFLAGS := -DESP_PLATFORM -D IDF_VER=\"$(IDF_VER)\" -MMD -MP $(CPPFLAGS) $(EXTR
 #-Werror=all:把所有的告警信息转化为错误信息，并在告警发生时终止编译过程
 #-Wno-error:把以下警告变成错误
 # Warnings-related flags relevant both for C and C++
+# Warnings-related flags relevant both for C and C++
 COMMON_WARNING_FLAGS = -Wall -Werror=all \
 	-Wno-error=unused-function \
 	-Wno-error=unused-but-set-variable \
@@ -318,6 +318,22 @@ COMMON_WARNING_FLAGS = -Wall -Werror=all \
 	-Wno-error=deprecated-declarations \
 	-Wextra \
 	-Wno-unused-parameter -Wno-sign-compare
+
+ifdef CONFIG_DISABLE_GCC8_WARNINGS
+COMMON_WARNING_FLAGS += -Wno-parentheses \
+	-Wno-sizeof-pointer-memaccess \
+	-Wno-clobbered \
+	-Wno-format-overflow \
+	-Wno-stringop-truncation \
+	-Wno-misleading-indentation \
+	-Wno-cast-function-type \
+	-Wno-implicit-fallthrough \
+	-Wno-unused-const-variable \
+	-Wno-switch-unreachable \
+	-Wno-format-truncation \
+	-Wno-memset-elt-size \
+	-Wno-int-in-bool-context
+endif
 
 ifdef CONFIG_WARN_WRITE_STRINGS
 COMMON_WARNING_FLAGS += -Wwrite-strings
@@ -398,14 +414,14 @@ ARFLAGS := cru
 
 export CFLAGS CPPFLAGS CXXFLAGS ARFLAGS
 
-#设置主机编译链接等工具以及交叉工具
 # Set default values that were not previously defined
 CC ?= gcc
 LD ?= ld
 AR ?= ar
-OBJCOPY ?= 
+OBJCOPY ?= objcopy
 SIZE ?= size
 
+#设置主机编译链接等工具以及交叉工具
 # Set host compiler and binutils
 HOSTCC := $(CC)
 HOSTLD := $(LD)
@@ -424,6 +440,14 @@ AR := $(call dequote,$(CONFIG_TOOLPREFIX))ar
 OBJCOPY := $(call dequote,$(CONFIG_TOOLPREFIX))objcopy
 SIZE := $(call dequote,$(CONFIG_TOOLPREFIX))size
 export CC CXX LD AR OBJCOPY SIZE
+
+COMPILER_VERSION_STR := $(shell $(CC) -dumpversion)
+COMPILER_VERSION_NUM := $(subst .,,$(COMPILER_VERSION_STR))
+GCC_NOT_5_2_0 := $(shell expr $(COMPILER_VERSION_STR) != "5.2.0")
+export COMPILER_VERSION_STR COMPILER_VERSION_NUM GCC_NOT_5_2_0
+
+CPPFLAGS += -DGCC_NOT_5_2_0=$(GCC_NOT_5_2_0)
+export CPPFLAGS
 
 PYTHON=$(call dequote,$(CONFIG_PYTHON))
 
@@ -491,7 +515,6 @@ endif
 
 all_binaries: $(APP_BIN)
 
-#创建文件夹，如果存在不报错，如果父文件夹不存在就重新创建
 $(BUILD_DIR_BASE):
 	mkdir -p $(BUILD_DIR_BASE)
 
@@ -520,6 +543,7 @@ component-$(2)-build: check-submodules $(call prereq_if_explicit, component-$(2)
 component-$(2)-clean: | $(BUILD_DIR_BASE)/$(2) $(BUILD_DIR_BASE)/$(2)/component_project_vars.mk
 	$(call ComponentMake,$(1),$(2)) clean
 
+#创建文件夹，如果存在不报错，如果父文件夹不存在就重新创建
 $(BUILD_DIR_BASE)/$(2):
 	@mkdir -p $(BUILD_DIR_BASE)/$(2)
 
@@ -540,13 +564,13 @@ $(BUILD_DIR_BASE)/$(2)/lib$(2).a: component-$(2)-build
 $(BUILD_DIR_BASE)/$(2)/component_project_vars.mk: $(1)/component.mk $(COMMON_MAKEFILES) $(SDKCONFIG_MAKEFILE) | $(BUILD_DIR_BASE)/$(2)
 	$(call ComponentMake,$(1),$(2)) component_project_vars.mk
 endef
+
 #取文件函数: $(notdir <names...>)功能: 从文件名序列 <names> 中取出非目录部分 返回: 文件名序列 <names> 中的非目录部分
 #$(foreach <var>,<list>,<text>)这个函数的意思是，把参数<list>;中的单词逐一取出放到参数<var>;所指定的变量中，然后再执行< text>;所包含的表达式。
 #$(eval text)它的意思是 text 的内容将作为makefile的一部分而被make解析和执行。
 $(foreach component,$(COMPONENT_PATHS),$(eval $(call GenerateComponentTargets,$(component),$(notdir $(component)))))
 $(foreach component,$(TEST_COMPONENT_PATHS),$(eval $(call GenerateComponentTargets,$(component),$(lastword $(subst /, ,$(dir $(component))))_test)))
 
-#$(addprefix <prefix>, <name-1>, <name-2>...<name-n>)
 #说明：该函数将前缀 <prefix> 加到各个 <name> 的前面去。
 #加后缀函数: $(addsuffix <suffix>,<names...>)
 #功能: 把后缀 <suffix> 加到 <names> 中的每个单词后面
@@ -590,6 +614,7 @@ GIT_STATUS := $(shell cd ${IDF_PATH} && git status --porcelain --ignore-submodul
 
 # Generate a target to check this submodule
 # $(1) - submodule directory, relative to IDF_PATH
+
 define GenerateSubmoduleCheckTarget
 check-submodules: $(IDF_PATH)/$(1)/.git
 $(IDF_PATH)/$(1)/.git:
@@ -632,28 +657,41 @@ print_flash_cmd: partition_table_get_info blank_ota_data
 
 # Check toolchain version using the output of xtensa-esp32-elf-gcc --version command.
 # The output normally looks as follows
-#     xtensa-esp32-elf-gcc (crosstool-NG crosstool-ng-1.22.0-59-ga194053) 4.8.5
-# The part in brackets is extracted into TOOLCHAIN_COMMIT_DESC variable,
-# the part after the brackets is extracted into TOOLCHAIN_GCC_VER.
+#     xtensa-esp32-elf-gcc (crosstool-NG crosstool-ng-1.22.0-80-g6c4433a) 5.2.0
+# The part in brackets is extracted into TOOLCHAIN_COMMIT_DESC variable
 ifdef CONFIG_TOOLPREFIX
 ifndef MAKE_RESTARTS
-TOOLCHAIN_COMMIT_DESC := $(shell $(CC) --version | sed -E -n 's|.*crosstool-ng-([0-9]+).([0-9]+).([0-9]+)-([0-9]+)-g([0-9a-f]{7}).*|\1.\2.\3-\4-g\5|gp')
-TOOLCHAIN_GCC_VER := $(shell $(CC) --version | sed -E -n 's|xtensa-esp32-elf-gcc.*\ \(.*\)\ (.*)|\1|gp')
+
+TOOLCHAIN_HEADER := $(shell $(CC) --version | head -1)
+TOOLCHAIN_PATH := $(shell which $(CC))
+TOOLCHAIN_COMMIT_DESC := $(shell $(CC) --version | sed -E -n 's|.*\(crosstool-NG (.*)\).*|\1|gp')
+TOOLCHAIN_GCC_VER := $(COMPILER_VERSION_STR)
 
 # Officially supported version(s)
-SUPPORTED_TOOLCHAIN_COMMIT_DESC := 1.22.0-80-g6c4433a
-SUPPORTED_TOOLCHAIN_GCC_VERSIONS := 5.2.0
+include $(IDF_PATH)/tools/toolchain_versions.mk
+
+ifndef IS_BOOTLOADER_BUILD
+$(info Toolchain path: $(TOOLCHAIN_PATH))
+endif
 
 ifdef TOOLCHAIN_COMMIT_DESC
-ifneq ($(TOOLCHAIN_COMMIT_DESC), $(SUPPORTED_TOOLCHAIN_COMMIT_DESC))
+ifeq (,$(findstring $(SUPPORTED_TOOLCHAIN_COMMIT_DESC),$(TOOLCHAIN_COMMIT_DESC)))
 $(info WARNING: Toolchain version is not supported: $(TOOLCHAIN_COMMIT_DESC))
 $(info Expected to see version: $(SUPPORTED_TOOLCHAIN_COMMIT_DESC))
 $(info Please check ESP-IDF setup instructions and update the toolchain, or proceed at your own risk.)
+else
+ifndef IS_BOOTLOADER_BUILD
+$(info Toolchain version: $(TOOLCHAIN_COMMIT_DESC))
+endif
 endif
 ifeq (,$(findstring $(TOOLCHAIN_GCC_VER), $(SUPPORTED_TOOLCHAIN_GCC_VERSIONS)))
 $(info WARNING: Compiler version is not supported: $(TOOLCHAIN_GCC_VER))
 $(info Expected to see version(s): $(SUPPORTED_TOOLCHAIN_GCC_VERSIONS))
 $(info Please check ESP-IDF setup instructions and update the toolchain, or proceed at your own risk.)
+else
+ifndef IS_BOOTLOADER_BUILD
+$(info Compiler version: $(TOOLCHAIN_GCC_VER))
+endif
 endif
 else
 $(info WARNING: Failed to find Xtensa toolchain, may need to alter PATH or set one in the configuration menu)
@@ -661,8 +699,3 @@ endif # TOOLCHAIN_COMMIT_DESC
 
 endif #MAKE_RESTARTS
 endif #CONFIG_TOOLPREFIX
-
-debug :
-	@echo $(summary)
-#	@echo $(BUILD_DIR_BASE)/$(2)
-#	@echo $(patsubst $(PWD)/%,%,$@)
