@@ -1,6 +1,7 @@
 # Makefile support for the menuconfig system
 
 #Find all Kconfig files for all components
+#找到组件下Kconfig
 COMPONENT_KCONFIGS := $(foreach component,$(COMPONENT_PATHS),$(wildcard $(component)/Kconfig))
 COMPONENT_KCONFIGS_PROJBUILD := $(foreach component,$(COMPONENT_PATHS),$(wildcard $(component)/Kconfig.projbuild))
 
@@ -19,9 +20,12 @@ SDKCONFIG_DEFAULTS ?= $(PROJECT_PATH)/sdkconfig.defaults
 $(KCONFIG_TOOL_DIR)/mconf-idf: $(KCONFIG_TOOL_DIR)/conf-idf
 
 # reset MAKEFLAGS as the menuconfig makefile uses implicit compile rules
+#$(HOSTCC):CC
+#$(HOSTLD):LD
 $(KCONFIG_TOOL_DIR)/mconf-idf $(KCONFIG_TOOL_DIR)/conf-idf: $(wildcard $(KCONFIG_TOOL_DIR)/*.c)
 	MAKEFLAGS="" CC=$(HOSTCC) LD=$(HOSTLD) \
 	$(MAKE) -C $(KCONFIG_TOOL_DIR)
+#展开通配符
 
 ifeq ("$(wildcard $(SDKCONFIG))","")
 # if no configuration file is present we need a rule for it

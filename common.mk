@@ -19,7 +19,6 @@ endif
 #
 # if V=1, $(summary) does nothing and $(details) will echo extra details
 # if V is unset or not 1, $(summary) echoes a summary and $(details) does nothing
-#是否打开编译详细提示
 VERBOSE ?=
 V ?= $(VERBOSE)
 ifeq ("$(V)","1")
@@ -43,10 +42,6 @@ endif
 SEPARATOR:="*******************************************************************************"
 
 # macro to remove quotes from an argument, ie $(call dequote,$(CONFIG_BLAH))
-#去除引号
-#字符串替换函数: $(subst <from>,<to>,<text>)
-#功能: 把字符串<text> 中的 <from> 替换为 <to>
-#返回: 替换过的字符串
 define dequote
 $(subst ",,$(1))
 endef
@@ -68,7 +63,6 @@ endef
 # example $(call resolvepath,$(CONFIG_PATH),$(CONFIG_DIR))
 define resolvepath
 $(abspath $(foreach dir,$(1),$(if $(filter /%,$(dir)),$(dir),$(subst //,/,$(2)/$(dir)))))
-
 endef
 
 

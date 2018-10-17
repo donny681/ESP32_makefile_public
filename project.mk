@@ -52,6 +52,7 @@ help:
 	@echo "'make partition_table', etc, etc."
 
 # Non-interactive targets. Mostly, those for which you do not need to build a binary
+#NON_INTERACTIVE_TARGET:defconfig clean% %clean help list-components print_flash_cmd check_python_dependencies
 NON_INTERACTIVE_TARGET += defconfig clean% %clean help list-components print_flash_cmd check_python_dependencies
 
 # dependency checks
@@ -228,6 +229,13 @@ COMPONENT_LIBRARIES :=
 # dependencies.
 #
 # See the component_project_vars.mk target in component_wrapper.mk
+#加后缀函数: $(addsuffix <suffix>,<names...>)
+#功能: 把后缀 <suffix> 加到 <names> 中的每个单词后面
+#返回: 加过后缀的文件名序列
+#取文件函数: $(notdir <names...>)
+
+#功能: 从文件名序列 <names> 中取出非目录部分
+#返回: 文件名序列 <names> 中的非目录部分
 #在工程目录build文件夹下创建.mk文件（绝对路径）
 COMPONENT_PROJECT_VARS := $(addsuffix /component_project_vars.mk,$(notdir $(COMPONENT_PATHS) ) $(TEST_COMPONENT_NAMES))
 COMPONENT_PROJECT_VARS := $(addprefix $(BUILD_DIR_BASE)/,$(COMPONENT_PROJECT_VARS))
@@ -699,3 +707,8 @@ endif # TOOLCHAIN_COMMIT_DESC
 
 endif #MAKE_RESTARTS
 endif #CONFIG_TOOLPREFIX
+
+
+debug:
+#	@echo $(COMPILER_VERSION_STR)
+	@echo $(COMPONENT_PROJECT_VARS)
